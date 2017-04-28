@@ -1477,7 +1477,6 @@ Kafka:
     Compress::Snappy
     Const::Fast
     Data::Compare
-    Data::HexDump::Range
     Data::Validate::Domain
     Data::Validate::IP
     Exception::Class

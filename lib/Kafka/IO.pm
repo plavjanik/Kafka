@@ -814,43 +814,15 @@ sub _get_family {
 
 # Show additional debugging information
 sub _debug_msg {
-    my ( $self, $message, $header, $colour ) = @_;
+    my ( $self, $message, $header, undef ) = @_;
 
     if ( $header ) {
-        unless ( $_hdr ) {
-            require Data::HexDump::Range;
-            $_hdr = Data::HexDump::Range->new(
-                FORMAT                          => 'ANSI',  # 'ANSI'|'ASCII'|'HTML'
-                COLOR                           => 'bw',    # 'bw' | 'cycle'
-                OFFSET_FORMAT                   => 'hex',   # 'hex' | 'dec'
-                DATA_WIDTH                      => 16,      # 16 | 20 | ...
-                DISPLAY_RANGE_NAME              => 0,
-#                MAXIMUM_RANGE_NAME_SIZE         => 16,
-                DISPLAY_COLUMN_NAMES            => 1,
-                DISPLAY_RULER                   => 1,
-                DISPLAY_OFFSET                  => 1,
-#                DISPLAY_CUMULATIVE_OFFSET       => 1,
-                DISPLAY_ZERO_SIZE_RANGE_WARNING => 0,
-                DISPLAY_ZERO_SIZE_RANGE         => 1,
-                DISPLAY_RANGE_NAME              => 0,
-#                DISPLAY_RANGE_SIZE              => 1,
-                DISPLAY_ASCII_DUMP              => 1,
-                DISPLAY_HEX_DUMP                => 1,
-#                DISPLAY_DEC_DUMP                => 1,
-#                COLOR_NAMES                     => {},
-                ORIENTATION                     => 'horizontal',
-            );
-        }
-
+        my $printable_message = $message;
+        $printable_message =~ s/[^[:print:]]+/./;
         say STDERR
             "# $header ", $self->{host}, ':', $self->{port}, "\n",
             '# Hex Stream: ', unpack( 'H*', $message ), "\n",
-            $_hdr->dump(
-                [
-                    [ 'data', length( $message ), $colour ],
-                ],
-                $message
-            )
+            '# Printable ASCII: ', $printable_message, "\n"
         ;
     } else {
         say STDERR format_message( '[%s] %s', scalar( localtime ), $message );
