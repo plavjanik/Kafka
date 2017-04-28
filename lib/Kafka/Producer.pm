@@ -36,6 +36,7 @@ use Scalar::Util qw(
 use Scalar::Util::Numeric qw(
     isint
 );
+use Time::HiRes qw(time);
 
 use Kafka qw(
     %ERROR
@@ -198,6 +199,11 @@ Optional, default = C<$REQUEST_TIMEOUT>.
 C<$REQUEST_TIMEOUT> is the default timeout that can be imported from the
 L<Kafka|Kafka> module.
 
+=item C<UseTimestamps =E<gt> $timestamps>
+
+If C<$timestamps> is true then messages that are send will always have timestamps with the current time unless
+the Timestamp is provided in C<Kafka::Producer-<gt>send> request.
+
 =back
 
 =cut
@@ -209,6 +215,7 @@ sub new {
         ClientId        => undef,
         RequiredAcks    => $WAIT_WRITTEN_TO_LOCAL_LOG,
         Timeout         => $REQUEST_TIMEOUT,
+        UseTimestamps   => undef,
     }, $class;
 
     while ( @args ) {
@@ -299,7 +306,7 @@ Do not use C<$Kafka::SEND_MAX_ATTEMPTS> in C<Kafka::Producer-<gt>send> request t
 
 =cut
 sub send {
-    my ( $self, $topic, $partition, $messages, $key, $compression_codec ) = @_;
+    my ( $self, $topic, $partition, $messages, $key, $compression_codec, $timestamp ) = @_;
 
     $key //= q{};
 
@@ -340,11 +347,16 @@ sub send {
         ],
     };
 
+    if (!defined($timestamp) && $self->{UseTimestamps}) {
+        $timestamp = int (time() * 1000);
+    }
+
     foreach my $message ( @$messages ) {
         push @$MessageSet, {
             Offset  => $PRODUCER_ANY_OFFSET,
             Key     => $key,
             Value   => $message,
+            Timestamp => $timestamp,
         };
     }
 
