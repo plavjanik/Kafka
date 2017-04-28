@@ -1235,22 +1235,48 @@ sub _encode_MessageSet_array {
         foreach my $MessageSet ( @$MessageSet_array_ref ) {
             $key_length   = length( $Key    = $MessageSet->{Key} );
             $value_length = length( $Value  = $MessageSet->{Value} );
+            my $timestamp = $MessageSet->{Timestamp};
+            my $magic = (defined $timestamp) ? 1 : 0;
 
-            $message_body = pack(
+            if ($magic == 0) {
+                $message_body = pack(
                     q{ccl>}                                         # MagicByte
-                                                                    # Attributes
-                                                                    # Key length
-                    .( $key_length   ? qq{a[$key_length]}   : q{} ) # Key
-                    .q{l>}                                          # Value length
-                    .( $value_length ? qq{a[$value_length]} : q{} ) # Value
-                ,
-                0,
-                $COMPRESSION_NONE,  # According to Apache Kafka documentation:
-                                    # The lowest 2 bits contain the compression codec used for the message.
-                                    # The other bits should be set to 0.
-                $key_length     ? ( $key_length,    $Key )    : ( $NULL_BYTES_LENGTH ),
-                $value_length   ? ( $value_length,  $Value )  : ( $NULL_BYTES_LENGTH ),
-            );
+                        # Attributes
+                        # Key length
+                        .( $key_length ? qq{a[$key_length]} : q{} ) # Key
+                        .q{l>}                                          # Value length
+                        .( $value_length ? qq{a[$value_length]} : q{} ) # Value
+                    ,
+                    0,
+                    $COMPRESSION_NONE,  # According to Apache Kafka documentation:
+                    # The lowest 2 bits contain the compression codec used for the message.
+                    # The other bits should be set to 0.
+                        $key_length ? ( $key_length, $Key ) : ( $NULL_BYTES_LENGTH ),
+                        $value_length ? ( $value_length, $Value ) : ( $NULL_BYTES_LENGTH ),
+                );
+            }
+            else {
+                $message_body = pack(
+                    q{ccQ>l>}                                         # MagicByte
+                        # Attributes
+                        # Key length
+                        .( $key_length ? qq{a[$key_length]} : q{} ) # Key
+                        .q{l>}                                          # Value length
+                        .( $value_length ? qq{a[$value_length]} : q{} ) # Value
+                    ,
+                    1,
+                    $COMPRESSION_NONE,  # According to Apache Kafka documentation:
+                    # This byte holds metadata attributes about the message. The
+                    # lowest 3 bits contain the compression codec used for the
+                    # message. The fourth lowest bit represents the timestamp type.
+                    # 0 stands for CreateTime and 1 stands for LogAppendTime. The
+                    # producer should always set this bit to 0. (since 0.10.0).
+                    # All other bits should be set to 0.
+                    $timestamp,
+                        $key_length ? ( $key_length, $Key ) : ( $NULL_BYTES_LENGTH ),
+                        $value_length ? ( $value_length, $Value ) : ( $NULL_BYTES_LENGTH ),
+                );
+            }
 
             $message_set .= pack( qq(x[8]l>l>),     # 8 Offset ($PRODUCER_ANY_OFFSET)
                 length( $message_body ) + 4,        # [l] MessageSize ( $message_body + Crc )
@@ -1281,6 +1307,8 @@ sub _encode_MessageSet_array {
     my $MessageSetSize = 0;
     my %sizes;
     foreach my $MessageSet ( @$MessageSet_array_ref ) {
+        my $timestamp = $MessageSet->{Timestamp};
+        my $magic = (defined $timestamp) ? 1 : 0;
         $MessageSetSize +=
               12                                                            # [q] Offset
                                                                             # [l] MessageSize
@@ -1289,6 +1317,7 @@ sub _encode_MessageSet_array {
                                                                             # [c] MagicByte
                                                                             # [c] Attributes
                                                                             # [l] Key length
+                + (($magic == 0) ? 0 : 8)                                   # [Q] Timestamp
                 + length( $MessageSet->{Key}    //= q{} )                   # Key
                 + 4                                                         # [l] Value length
                 + length( $MessageSet->{Value}  //= q{} )                   # Value
@@ -1309,22 +1338,49 @@ sub _encode_MessageSet_array {
 
         $key_length   = length( $Key    = $MessageSet->{Key} );
         $value_length = length( $Value  = $MessageSet->{Value} );
+        my $timestamp = $MessageSet->{Timestamp};
+        my $magic = (defined $timestamp) ? 1 : 0;
 
-        $message_body = pack(
+        if ($magic == 0) {
+            $message_body = pack(
                 q{ccl>}                                         # MagicByte
-                                                                # Attributes
-                                                                # Key length
-                .( $key_length   ? qq{a[$key_length]}   : q{} ) # Key
-                .q{l>}                                          # Value length
-                .( $value_length ? qq{a[$value_length]} : q{} ) # Value
-            ,
-            0,
-            $compression_codec // $COMPRESSION_NONE,    # According to Apache Kafka documentation:
-                                # The lowest 2 bits contain the compression codec used for the message.
-                                # The other bits should be set to 0.
-            $key_length     ? ( $key_length,    $Key )    : ( $NULL_BYTES_LENGTH ),
-            $value_length   ? ( $value_length,  $Value )  : ( $NULL_BYTES_LENGTH ),
-        );
+                    # Attributes
+                    # Key length
+                    .( $key_length ? qq{a[$key_length]} : q{} ) # Key
+                    .q{l>}                                          # Value length
+                    .( $value_length ? qq{a[$value_length]} : q{} ) # Value
+                ,
+                0,
+                $compression_codec // $COMPRESSION_NONE,  # According to Apache Kafka documentation:
+                # The lowest 2 bits contain the compression codec used for the message.
+                # The other bits should be set to 0.
+                    $key_length ? ( $key_length, $Key ) : ( $NULL_BYTES_LENGTH ),
+                    $value_length ? ( $value_length, $Value ) : ( $NULL_BYTES_LENGTH ),
+            );
+        }
+        else {
+            $message_body = pack(
+                q{ccQ>l>}                                         # MagicByte
+                    # Attributes
+                    # Key length
+                    .( $key_length   ? qq{a[$key_length]}   : q{} ) # Key
+                    .q{l>}                                          # Value length
+                    .( $value_length ? qq{a[$value_length]} : q{} ) # Value
+                ,
+                1,
+                $compression_codec // $COMPRESSION_NONE,  # According to Apache Kafka documentation:
+                # This byte holds metadata attributes about the message. The
+                # lowest 3 bits contain the compression codec used for the
+                # message. The fourth lowest bit represents the timestamp type.
+                # 0 stands for CreateTime and 1 stands for LogAppendTime. The
+                # producer should always set this bit to 0. (since 0.10.0).
+                # All other bits should be set to 0.
+                $timestamp,
+                $key_length     ? ( $key_length,    $Key )    : ( $NULL_BYTES_LENGTH ),
+                $value_length   ? ( $value_length,  $Value )  : ( $NULL_BYTES_LENGTH ),
+            );
+
+        }
 
         push( @$data, crc32( $message_body ), $message_body );
         # Message
@@ -1334,6 +1390,7 @@ sub _encode_MessageSet_array {
         # Message body:
                                                                                 # MagicByte
                                                                                 # Attributes
+                                                                                # Timestamp (if MagicByte >= 1)
                                                                                 # Key length
                                                                                 # Key
                                                                                 # Value length
