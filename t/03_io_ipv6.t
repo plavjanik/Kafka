@@ -16,6 +16,11 @@ use lib qw(
 
 use Test::More;
 
+BEGIN {
+    plan skip_all => 'Skipping IPv6 tests'
+        unless $ENV{IPV6};
+}
+
 #-- verify load the module
 
 BEGIN {
@@ -51,7 +56,7 @@ use Socket qw(
     inet_ntop
     pack_sockaddr_in
 );
-use Net::EmptyPort qw(
+use Kafka::EmptyPort qw(
     can_bind
 );
 

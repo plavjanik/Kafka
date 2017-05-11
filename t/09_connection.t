@@ -28,7 +28,6 @@ plan 'no_plan';
 #-- load the modules -----------------------------------------------------------
 
 use Const::Fast;
-#use File::HomeDir;
 use Params::Util qw(
     _HASH
     _INSTANCE
@@ -82,7 +81,6 @@ use Kafka::TestInternals qw(
 #-- declarations ---------------------------------------------------------------
 
 # WARNING: must match the settings of your system
-#const my $KAFKA_BASE_DIR    => $ENV{KAFKA_BASE_DIR} || File::Spec->catdir( File::HomeDir->my_home, 'kafka' );
 const my $KAFKA_BASE_DIR    => $ENV{KAFKA_BASE_DIR};
 
 my ( $port, $connect, $server, $request, $response, $tmp );

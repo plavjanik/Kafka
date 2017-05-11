@@ -17,6 +17,11 @@ use lib qw(
 use Test::More;
 
 BEGIN {
+    plan skip_all => 'Skipping IPv6 tests'
+        unless $ENV{IPV6};
+}
+
+BEGIN {
     plan skip_all => 'Unknown base directory of Kafka server'
         unless $ENV{KAFKA_BASE_DIR};
 }
@@ -43,7 +48,7 @@ plan 'no_plan';
 #-- load the modules -----------------------------------------------------------
 
 use Const::Fast;
-use Net::EmptyPort qw(
+use Kafka::EmptyPort qw(
     can_bind
 );
 use Socket;

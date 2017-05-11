@@ -21,6 +21,10 @@ BEGIN {
         unless $ENV{KAFKA_BASE_DIR};
 }
 
+BEGIN {
+    plan skip_all => 'Unreliable test'
+}
+
 #-- verify load the module
 
 BEGIN {

@@ -54,9 +54,9 @@ use FindBin qw(
     $Bin
 );
 use IO::File;
-use Net::EmptyPort qw(
+use Kafka::EmptyPort qw(
     check_port
-    empty_port
+    find_empty_port
 );
 use Params::Util qw(
     _NONNEGINT
@@ -346,7 +346,7 @@ sub new {
         my $port    = $START_PORT;
         my $node_id = 0;
         for ( 1..$kafka_replication_factor ) {
-            $port = empty_port( $port - 1 );
+            $port = find_empty_port( $port - 1 );
             my $server = $self->{cluster}->{ $port } = {};  # server in the cluster identify by its port
             $server->{node_id} = $node_id;
 
@@ -1003,7 +1003,7 @@ sub _start_zookeeper {
     return if $self->is_run_in_base_dir;
 
     # the port for connecting to Zookeeper server
-    my $zookeeper_client_port = empty_port( $START_PORT - 1 );
+    my $zookeeper_client_port = find_empty_port( $START_PORT - 1 );
     my $log_dir = $self->{kafka}->{zookeeper_dataDir} = catdir( $self->_data_dir, 'zookeeper' );
 
     unless ( -d $log_dir ) {

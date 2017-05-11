@@ -38,8 +38,8 @@ plan 'no_plan';
 #-- load the modules -----------------------------------------------------------
 
 use IO::Socket::INET;
-use Net::EmptyPort qw(
-    empty_port
+use Kafka::EmptyPort qw(
+    find_empty_port
 );
 use POSIX ':signal_h';
 use Socket qw(
@@ -48,7 +48,7 @@ use Socket qw(
     PF_INET
     PF_INET6
     inet_aton
-    inet_ntop
+    inet_ntoa
 );
 use Sub::Install;
 use Sys::SigAction qw(
@@ -118,7 +118,7 @@ sub debug_msg {
 
 #-- Global data ----------------------------------------------------------------
 
-my $server_port = empty_port( $KAFKA_SERVER_PORT );
+my $server_port = find_empty_port( $KAFKA_SERVER_PORT );
 $server = Test::TCP->new(
     code    => $server_code,
     port    => $server_port,
@@ -370,7 +370,8 @@ SKIP: {
         );
         is $io->{af}, AF_INET, 'af OK';
         is $io->{pf}, PF_INET, 'pf OK';
-        is $io->{ip}, inet_ntop( AF_INET, scalar( gethostbyname( 'localhost' ) ) ), 'ip OK';
+#        is $io->{ip}, inet_ntop( AF_INET, scalar( gethostbyname( 'localhost' ) ) ), 'ip OK';
+        is $io->{ip}, inet_ntoa( scalar( gethostbyname( 'localhost' ) ) ), 'ip OK';
     }
 
     my $host = '127.0.0.1';

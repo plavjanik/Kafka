@@ -67,7 +67,6 @@ The Kafka package has the following optional dependencies:
    IO::Socket::INET
    IO::Socket::IP
    List::Util
-   Net::EmptyPort
    Params::Util
    Proc::Daemon
    Scalar::Util
@@ -80,7 +79,6 @@ The Kafka package has the following optional dependencies:
    Test::Fixme
    Test::More
    Test::NoWarnings
-   Test::TCP
    Time::HiRes
    Try::Tiny
 

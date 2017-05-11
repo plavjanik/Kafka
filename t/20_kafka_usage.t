@@ -38,7 +38,6 @@ plan 'no_plan';
 #-- load the modules -----------------------------------------------------------
 
 use Const::Fast;
-use File::HomeDir;
 use Socket;
 
 # Usage - Basic functionalities to include a simple Producer and Consumer
@@ -70,7 +69,7 @@ const my $START_PORT        => 9094;        # Port Number 9094-9099 Unassigned
 const my $ITERATIONS        => 100;         # The maximum number of attempts
 
 # WARNING: must match the settings of your system
-const my $KAFKA_BASE_DIR    => $ENV{KAFKA_BASE_DIR} || File::Spec->catdir( File::HomeDir->my_home, 'kafka' );
+const my $KAFKA_BASE_DIR    => $ENV{KAFKA_BASE_DIR};
 
 const my $topic             => $Kafka::Cluster::DEFAULT_TOPIC;
 const my $partition         => 0;

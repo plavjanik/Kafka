@@ -52,14 +52,14 @@ use POSIX qw(
 use Scalar::Util qw(
     dualvar
 );
+
+use Socket;
 use Socket qw(
     AF_INET
     AF_INET6
     IPPROTO_TCP
     MSG_DONTWAIT
     MSG_PEEK
-    NI_NUMERICHOST
-    NIx_NOSERV
     PF_INET
     PF_INET6
     SOCK_STREAM
@@ -67,14 +67,11 @@ use Socket qw(
     SO_ERROR
     SO_RCVTIMEO
     SO_SNDTIMEO
-    getaddrinfo
-    getnameinfo
     inet_aton
-    inet_pton
-    inet_ntop
+    inet_ntoa
     pack_sockaddr_in
-    pack_sockaddr_in6
 );
+
 use Sys::SigAction qw(
     set_sig_handler
 );
@@ -657,8 +654,8 @@ sub _connect {
 
     # Connect returns immediately because of O_NONBLOCK.
     my $sockaddr = $self->{af} eq AF_INET
-        ? pack_sockaddr_in(  $port, inet_aton( $ip ) )
-        : pack_sockaddr_in6( $port, inet_pton( $self->{af}, $ip ) )
+        ? pack_sockaddr_in(  $port, Socket::inet_aton( $ip ) )
+        : Socket::pack_sockaddr_in6( $port, Socket::inet_pton( $self->{af}, $ip ) )
     ;
     connect( $connection, $sockaddr ) || $!{EINPROGRESS} || die( format_message( "connect ip = %s, port = %s: %s\n", $ip, $port, $! ) );
 
@@ -746,7 +743,7 @@ sub _gethostbyname {
 
     my $ip_version = $self->{ip_version};
     if ( defined( $ip_version ) && $ip_version == $IP_V6 ) {
-        my ( $err, @addrs ) = getaddrinfo(
+        my ( $err, @addrs ) = Socket::getaddrinfo(
             $name,
             '',     # not interested in the service name
             {
@@ -759,7 +756,7 @@ sub _gethostbyname {
 
         $is_v4_fqdn = 0;
         for my $addr ( @addrs ) {
-            my ( $err, $ipaddr ) = getnameinfo( $addr->{addr}, NI_NUMERICHOST, NIx_NOSERV );
+            my ( $err, $ipaddr ) = Socket::getnameinfo( $addr->{addr}, 1, 1 << 1 ); # 1 = NI_NUMERICHOST, 1 << 1 = NIx_NOSERV
             next if $err;
 
             $self->{af} = AF_INET6;
@@ -771,7 +768,7 @@ sub _gethostbyname {
 
     if ( $is_v4_fqdn && ( !defined( $ip_version ) || $ip_version == $IP_V4 ) ) {
         if ( my $ipaddr = gethostbyname( $name ) ) {
-            $self->{ip} = inet_ntop( $self->{af}, $ipaddr );
+            $self->{ip} = inet_ntoa( $ipaddr );
         }
     }
 
